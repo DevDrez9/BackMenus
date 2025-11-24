@@ -1,0 +1,191 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+
+// MODELOS PRINCIPALES
+
+
+enum Role {
+  ADMIN
+  OWNER
+  CLIENT
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIAL
+}
+
+enum PhotoStrategy {
+  HIGHLIGHT_ONLY
+  PER_PRODUCT
+  HYBRID
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(OWNER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurants Restaurant[]
+  reviews     Review[]
+}
+
+model Plan {
+  id                 String        @id @default(uuid())
+  name               String
+  price              Decimal
+  
+  // --- LÍMITES ESPECÍFICOS ---
+  hasSections        Boolean       @default(false)
+  hasAnalytics       Boolean       @default(false) // Nuevo: Para Plan 3
+
+  maxHighlightImages Int           @default(0)     // Límite para el restaurante
+  maxProductImages   Int?                          // Límite para platos (null = ilimitado)
+  maxProducts        Int?                          // Límite total de platos (opcional)
+
+  subscriptions      Subscription[]
+  sectionTemplates   SectionTemplate[] 
+
+
+}
+
+// --- NUEVO MODELO ---
+model SectionTemplate {
+  id        String   @id @default(uuid())
+  name      String   // Ej: "Entradas", "Postres", "Vinos Premium"
+  imageUrl  String?  // Opcional: Icono o foto de referencia
+
+  // Relación con la tabla de imágenes
+  images    Image[]
+  
+  // El plan mínimo requerido para ver esta plantilla
+  planId    String
+  plan      Plan     @relation(fields: [planId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+
+model Subscription {
+  id            String             @id @default(uuid())
+  restaurantId  String             @unique
+  planId        String
+  status        SubscriptionStatus @default(ACTIVE)
+  startDate     DateTime           @default(now())
+  endDate       DateTime?
+
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id])
+  plan          Plan       @relation(fields: [planId], references: [id])
+}
+
+model Restaurant {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  address     String?
+  latitude    Float?   
+  longitude   Float?
+  userId      String
+
+  theme       String   @default("clean") 
+
+  owner       User          @relation(fields: [userId], references: [id])
+  subscription Subscription?
+  menus       Menu[]
+  images      Image[]
+  reviews     Review[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// --- NUEVO MODELO: RESEÑAS ---
+model Review {
+  id           String   @id @default(uuid())
+  rating       Int      
+  comment      String?  
+  userId       String
+  restaurantId String
+
+  user         User       @relation(fields: [userId], references: [id])
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+model Menu {
+  id           String  @id @default(uuid())
+  name         String 
+  isActive     Boolean @default(true)
+  restaurantId String
+
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  categories   Category[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+model Category {
+  id          String  @id @default(uuid())
+  name        String 
+  order       Int     @default(0) 
+  menuId      String
+
+  menu        Menu      @relation(fields: [menuId], references: [id])
+  products    Product[]
+
+  @@index([menuId])
+}
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  isAvailable Boolean  @default(true)
+  categoryId  String
+
+  category    Category @relation(fields: [categoryId], references: [id])
+  images      Image[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Image {
+  id           String  @id @default(uuid())
+  url          String
+  publicId     String?
+  
+  restaurantId String?
+  restaurant   Restaurant? @relation(fields: [restaurantId], references: [id])
+
+  productId    String?
+  product      Product?    @relation(fields: [productId], references: [id])
+
+  // --- NUEVO CAMPO ---
+  sectionTemplateId String?
+  sectionTemplate   SectionTemplate? @relation(fields: [sectionTemplateId], references: [id])
+
+  createdAt    DateTime @default(now())
+}
