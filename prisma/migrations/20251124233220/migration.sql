@@ -18,9 +18,21 @@ CREATE TABLE `Plan` (
     `name` VARCHAR(191) NOT NULL,
     `price` DECIMAL(65, 30) NOT NULL,
     `hasSections` BOOLEAN NOT NULL DEFAULT false,
-    `maxImages` INTEGER NOT NULL,
-    `photoType` ENUM('HIGHLIGHT_ONLY', 'PER_PRODUCT', 'HYBRID') NOT NULL,
+    `hasAnalytics` BOOLEAN NOT NULL DEFAULT false,
+    `maxHighlightImages` INTEGER NOT NULL DEFAULT 0,
+    `maxProductImages` INTEGER NULL,
     `maxProducts` INTEGER NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `SectionTemplate` (
+    `id` VARCHAR(191) NOT NULL,
+    `name` VARCHAR(191) NOT NULL,
+    `imageUrl` VARCHAR(191) NULL,
+    `planId` VARCHAR(191) NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -45,9 +57,10 @@ CREATE TABLE `Restaurant` (
     `slug` VARCHAR(191) NOT NULL,
     `description` VARCHAR(191) NULL,
     `address` VARCHAR(191) NULL,
-    `userId` VARCHAR(191) NOT NULL,
     `latitude` DOUBLE NULL,
     `longitude` DOUBLE NULL,
+    `userId` VARCHAR(191) NOT NULL,
+    `theme` VARCHAR(191) NOT NULL DEFAULT 'clean',
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -112,10 +125,14 @@ CREATE TABLE `Image` (
     `publicId` VARCHAR(191) NULL,
     `restaurantId` VARCHAR(191) NULL,
     `productId` VARCHAR(191) NULL,
+    `sectionTemplateId` VARCHAR(191) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- AddForeignKey
+ALTER TABLE `SectionTemplate` ADD CONSTRAINT `SectionTemplate_planId_fkey` FOREIGN KEY (`planId`) REFERENCES `Plan`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Subscription` ADD CONSTRAINT `Subscription_restaurantId_fkey` FOREIGN KEY (`restaurantId`) REFERENCES `Restaurant`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -146,3 +163,6 @@ ALTER TABLE `Image` ADD CONSTRAINT `Image_restaurantId_fkey` FOREIGN KEY (`resta
 
 -- AddForeignKey
 ALTER TABLE `Image` ADD CONSTRAINT `Image_productId_fkey` FOREIGN KEY (`productId`) REFERENCES `Product`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Image` ADD CONSTRAINT `Image_sectionTemplateId_fkey` FOREIGN KEY (`sectionTemplateId`) REFERENCES `SectionTemplate`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
