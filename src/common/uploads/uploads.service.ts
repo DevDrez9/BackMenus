@@ -85,6 +85,49 @@ export class UploadsService {
     return image;
   }
 
+   // --- NUEVO MÉTODO: ELIMINAR IMAGEN ---
+  async deleteImage(id: string, userId: string) {
+    // 1. Buscar la imagen
+    const image = await this.prisma.image.findUnique({
+      where: { id },
+      include: { 
+        restaurant: true,
+        product: { include: { category: { include: { menu: { include: { restaurant: true } } } } } }
+      }
+    });
+
+    if (!image) throw new NotFoundException('Imagen no encontrada');
+
+    // 2. Verificar Propiedad
+    let ownerId = '';
+    if (image.restaurant) {
+      ownerId = image.restaurant.userId;
+    } else if (image.product) {
+      ownerId = image.product.category.menu.restaurant.userId;
+    } 
+    // Si es template, asumimos admin (o simplificamos validación)
+    
+    if (ownerId && ownerId !== userId) {
+        // Nota: Si implementas roles, aquí podrías dejar pasar al ADMIN
+        throw new ForbiddenException('No tienes permiso para eliminar esta imagen');
+    }
+
+    // 3. Borrar archivo físico
+    if (image.publicId) {
+        const filePath = path.join(process.cwd(), 'uploads', image.publicId);
+        if (fs.existsSync(filePath)) {
+            try {
+                fs.unlinkSync(filePath);
+            } catch (e) {
+                console.error("Error borrando archivo físico", e);
+            }
+        }
+    }
+
+    // 4. Borrar de BD
+    return this.prisma.image.delete({ where: { id } });
+  }
+
 
    private async validatePlanLimits(restaurantId: string, type: UploadType) {
      // ... (código existente)
