@@ -13,7 +13,15 @@ async function bootstrap() {
 
   // 2. Habilitar CORS (Para que tu Frontend en React/Vue/Angular pueda hacer peticiones)
   app.enableCors({
-    origin: '*', // En producción cambia esto por tu dominio real
+    origin: [
+      // Dominios de Producción
+      'https://dashboardmenus.ratelapps.com',
+      'https://menufacil.ratelapps.com',
+      
+      // Dominios de Desarrollo (Opcional: mantenlos si haces pruebas locales contra este back)
+      'http://localhost:5173', 
+      'http://localhost:5174',
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
