@@ -17,6 +17,10 @@ async function bootstrap() {
       // Dominios de Producción
       'https://dashboardmenus.ratelapps.com',
       'https://menufacil.ratelapps.com',
+      'https://mimenu.ratelapps.com',
+      'http://dashboardmenus.ratelapps.com',
+      'http://menufacil.ratelapps.com',
+      'http://mimenu.ratelapps.com',
       
       // Dominios de Desarrollo (Opcional: mantenlos si haces pruebas locales contra este back)
       'http://localhost:5173', 
